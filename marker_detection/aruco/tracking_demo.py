@@ -1,14 +1,13 @@
 import cv2
 import cv2.aruco as aruco
 import numpy as np
-from scipy.spatial.transform import Rotation
-from pprint import pprint
 
 w = 1920
 h = 1080
 
 TARGET_POS = np.array([-0.4, -0.7, 2.5]).reshape(3, 1)
-MARGIN = 0.2
+MAX_TRANS_ERROR = 0.2
+MAX_ROT_ERROR = 0.1
 WIDGET_X = w - 200
 WIDGET_Y = h - 200
 WIDGET_CENTER = (WIDGET_X, WIDGET_Y)
@@ -21,7 +20,6 @@ CAMERA_MATRIX = np.array([
     [0.00000000e+00, 1.36239697e+03, 5.59607244e+02],
     [0.00000000e+00, 0.00000000e+00, 1.00000000e+00],
 ])
-CAMERA_MATRIX_INV = np.linalg.inv(CAMERA_MATRIX)
 
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
 aruco_param = aruco.DetectorParameters_create()
@@ -30,22 +28,21 @@ cam = cv2.VideoCapture(0)
 cam.set(cv2.CAP_PROP_FRAME_WIDTH, w)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
 
-i = 0
 
-
-def draw_axis(img, R, t, K):
+def draw_axis(img, R, t, K,):
+    # https://stackoverflow.com/questions/30207467/how-to-draw-3d-coordinate-axes-with-opencv-for-face-pose-estimation
     rotV = R
     points = np.float32([[1, 0, 0], [0, 1, 0], [0, 0, -1], [0, 0, 0]]).reshape(-1, 3)
     axisPoints, _ = cv2.projectPoints(points, rotV, t, K, (0, 0, 0, 0))
     axisPoints = axisPoints.astype(np.int32)
-    img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255, 0, 0), 3)
-    img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0, 255, 0), 3)
-    img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (0, 0, 255), 3)
+    cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255, 0, 0), 3)
+    cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0, 255, 0), 3)
+    cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (0, 0, 255), 3)
     return img
 
 
 def draw_movement_widget(e, img):
-    e = np.sign(e)*np.log10(np.abs(e) + 1)
+    e = np.sign(e) * np.log10(np.abs(e) + 1)
     error_x = int(np.clip(e[0] * ARROW_SCALE_FACTOR, -MAX_ARROW_LEN, MAX_ARROW_LEN))
     error_y = int(np.clip(e[1] * ARROW_SCALE_FACTOR, -MAX_ARROW_LEN, MAX_ARROW_LEN))
     error_z = int(
@@ -67,21 +64,28 @@ while cv2.waitKey(1) != ord('q'):
     greyscale_img = cv2.cvtColor(undistorted_img, cv2.COLOR_RGB2GRAY)
 
     bounding_boxes, ids, _ = aruco.detectMarkers(greyscale_img, aruco_dict)
-
     if len(bounding_boxes) > 0:
         bounding_boxes = bounding_boxes[0][0]
         world_points = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], np.float32)
         _, rot, trans = cv2.solvePnP(world_points, bounding_boxes, CAMERA_MATRIX, (0, 0, 0, 0))
         draw_axis(undistorted_img, rot, trans, CAMERA_MATRIX)
 
-        error = TARGET_POS - trans
-        print(np.linalg.norm(error))
+        trans_error = TARGET_POS - trans
+        trans_error_mag = np.linalg.norm(trans_error)
+        rot_error_mag = np.linalg.norm(rot)
 
-        draw_movement_widget(error, undistorted_img)
+        print(f"Translation Error: {trans_error_mag:.2f}, Rotation Error: {rot_error_mag:.2f}", end='\r')
 
-        if np.linalg.norm(error) < MARGIN:
+        draw_movement_widget(trans_error, undistorted_img)
+        draw_axis(undistorted_img, (0, 0, 0), TARGET_POS, CAMERA_MATRIX)
+
+        if trans_error_mag < MAX_TRANS_ERROR:
             pts = bounding_boxes.reshape((-1, 1, 2)).astype(np.int32)
             cv2.polylines(undistorted_img, [pts], True, (0, 255, 0), 8)
+
+        if rot_error_mag < MAX_ROT_ERROR:
+            for i in range(4):
+                cv2.circle(undistorted_img, bounding_boxes[i].astype(np.int32), 10, (255, 0, 255), -1)
 
     cv2.imshow('frame', cv2.resize(undistorted_img, None, fx=0.5, fy=0.5))
 
