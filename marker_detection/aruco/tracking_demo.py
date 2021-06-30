@@ -1,6 +1,7 @@
 import cv2
 import cv2.aruco as aruco
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 w = 1920
 h = 1080
@@ -29,10 +30,10 @@ cam.set(cv2.CAP_PROP_FRAME_WIDTH, w)
 cam.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
 
 
-def draw_axis(img, R, t, K,):
+def draw_axis(img, R, t, K, ):
     # https://stackoverflow.com/questions/30207467/how-to-draw-3d-coordinate-axes-with-opencv-for-face-pose-estimation
     rotV = R
-    points = np.float32([[1, 0, 0], [0, 1, 0], [0, 0, -1], [0, 0, 0]]).reshape(-1, 3)
+    points = np.float32([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]).reshape(-1, 3)
     axisPoints, _ = cv2.projectPoints(points, rotV, t, K, (0, 0, 0, 0))
     axisPoints = axisPoints.astype(np.int32)
     cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255, 0, 0), 3)
@@ -64,28 +65,34 @@ while cv2.waitKey(1) != ord('q'):
     greyscale_img = cv2.cvtColor(undistorted_img, cv2.COLOR_RGB2GRAY)
 
     bounding_boxes, ids, _ = aruco.detectMarkers(greyscale_img, aruco_dict)
+
     if len(bounding_boxes) > 0:
         bounding_boxes = bounding_boxes[0][0]
         world_points = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], np.float32)
-        _, rot, trans = cv2.solvePnP(world_points, bounding_boxes, CAMERA_MATRIX, (0, 0, 0, 0))
-        draw_axis(undistorted_img, rot, trans, CAMERA_MATRIX)
+        _, r_vec, trans = cv2.solvePnP(world_points, bounding_boxes, CAMERA_MATRIX, (0, 0, 0, 0))
 
         trans_error = TARGET_POS - trans
         trans_error_mag = np.linalg.norm(trans_error)
-        rot_error_mag = np.linalg.norm(rot)
+        rot_error_mag = np.linalg.norm(r_vec)
 
-        print(f"Translation Error: {trans_error_mag:.2f}, Rotation Error: {rot_error_mag:.2f}", end='\r')
+        rot = Rotation.from_rotvec(r_vec.reshape(3, ))
+        euler = rot.as_euler('xyz', degrees=True)
 
-        draw_movement_widget(trans_error, undistorted_img)
-        draw_axis(undistorted_img, (0, 0, 0), TARGET_POS, CAMERA_MATRIX)
+        print(
+            f"Translation Error: [{10 * trans_error[0, 0]:+.2f}, {10 * trans_error[1, 0]:+.2f}, {10 * trans_error[2, 0]:+.2f}]^T, "
+            f" Rotation Error: [{euler[0]:+5.2f}, {euler[1]:+5.2f}, {euler[2]:+5.2f}]", end='\r')
 
         if trans_error_mag < MAX_TRANS_ERROR:
             pts = bounding_boxes.reshape((-1, 1, 2)).astype(np.int32)
-            cv2.polylines(undistorted_img, [pts], True, (0, 255, 0), 8)
+            cv2.polylines(undistorted_img, [pts], True, (0, 255, 255), 8)
 
         if rot_error_mag < MAX_ROT_ERROR:
             for i in range(4):
                 cv2.circle(undistorted_img, bounding_boxes[i].astype(np.int32), 10, (255, 0, 255), -1)
+
+        draw_movement_widget(trans_error, undistorted_img)
+        draw_axis(undistorted_img, r_vec, trans, CAMERA_MATRIX)
+        draw_axis(undistorted_img, (0, 0, 0), TARGET_POS, CAMERA_MATRIX)
 
     cv2.imshow('frame', cv2.resize(undistorted_img, None, fx=0.5, fy=0.5))
 
