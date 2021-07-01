@@ -51,8 +51,8 @@ def draw_movement_widget(e, img):
 
     cv2.rectangle(img, (WIDGET_X - MAX_ARROW_LEN, WIDGET_Y - MAX_ARROW_LEN),
                   (WIDGET_X + MAX_ARROW_LEN, WIDGET_Y + MAX_ARROW_LEN), (255, 255, 255), -1)
-    cv2.arrowedLine(img, WIDGET_CENTER, (WIDGET_X - error_x, WIDGET_Y), (255, 0, 0), 3)
-    cv2.arrowedLine(img, WIDGET_CENTER, (WIDGET_X, WIDGET_Y - error_y), (0, 255, 0), 3)
+    cv2.arrowedLine(img, WIDGET_CENTER, (WIDGET_X + error_x, WIDGET_Y), (255, 0, 0), 3)
+    cv2.arrowedLine(img, WIDGET_CENTER, (WIDGET_X, WIDGET_Y + error_y), (0, 255, 0), 3)
     cv2.arrowedLine(img, WIDGET_CENTER, (WIDGET_X + error_z, WIDGET_Y + error_z), (0, 0, 255), 3)
 
 
@@ -71,16 +71,17 @@ while cv2.waitKey(1) != ord('q'):
         world_points = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], np.float32)
         _, r_vec, trans = cv2.solvePnP(world_points, bounding_boxes, CAMERA_MATRIX, (0, 0, 0, 0))
 
-        trans_error = TARGET_POS - trans
+        trans_error = trans - TARGET_POS
         trans_error_mag = np.linalg.norm(trans_error)
         rot_error_mag = np.linalg.norm(r_vec)
 
         rot = Rotation.from_rotvec(r_vec.reshape(3, ))
-        euler = rot.as_euler('xyz', degrees=True)
+        euler = rot.as_euler('zyx', degrees=True)
 
         print(
-            f"Translation Error: [{10 * trans_error[0, 0]:+.2f}, {10 * trans_error[1, 0]:+.2f}, {10 * trans_error[2, 0]:+.2f}]^T, "
-            f" Rotation Error: [{euler[0]:+5.2f}, {euler[1]:+5.2f}, {euler[2]:+5.2f}]", end='\r')
+            f"Translation Error: "
+            f"[{10 * trans_error[0, 0]:+8.2f}, {10 * trans_error[1, 0]:+8.2f}, {10 * trans_error[2, 0]:+8.2f}]^T,"
+            f" Rotation Error: [{euler[0]:+8.2f}, {euler[1]:+8.2f}, {euler[2]:+8.2f}]", end='\r')
 
         if trans_error_mag < MAX_TRANS_ERROR:
             pts = bounding_boxes.reshape((-1, 1, 2)).astype(np.int32)
