@@ -2,14 +2,21 @@ import cv2
 import numpy as np
 import glob
 from pprint import pprint
+import argparse
+import os.path
 
-# Show each image with points marked
-SHOW_IMGS = False
+parser = argparse.ArgumentParser()
+parser.add_argument("--show", help="Displays the image before exiting", action="store_true")
+parser.add_argument("-s", "--src", help="The folder to load images from", required=True, type=str)
+parser.add_argument("--dst", help="The folder to load images from", default="./")
+
+args = parser.parse_args()
 
 CHECKERBOARD = (7, 9)
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-image_names = glob.glob('img/*.jpg')
+image_names = glob.glob(os.path.join(args.src, "*.jpg"))
+image_names += glob.glob(os.path.join(args.src, "*.png"))
 
 objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
 objp[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
@@ -34,7 +41,7 @@ for fname in image_names:
         imgpoints.append(corners)
         # Draw and display the corners
         cv2.drawChessboardCorners(img, (7, 6), corners2, ret)
-        if SHOW_IMGS:
+        if args.show:
             cv2.imshow('img', img)
             cv2.waitKey(0)
 
@@ -44,8 +51,8 @@ if gray is not None:
         cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     h, w = gray.shape[:2]
 
-    np.save('camera_matrix.npy', camera_matrix)
-    np.save('distortion_coefficients.npy', distortion_coefficients)
+    np.save(os.path.join(args.dst, 'camera_matrix.npy'), camera_matrix)
+    np.save(os.path.join(args.dst, 'distortion_coefficients.npy'), distortion_coefficients)
 
     print("Camera Matrix:")
     pprint(camera_matrix)
