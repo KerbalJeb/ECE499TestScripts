@@ -2,21 +2,23 @@ import cv2 as cv
 import numpy as np
 
 
-def draw_axis(img, rotV, t, K):
+def draw_axis(img, rvec, tvec, camera_matrix, scale=1, line_width=3):
     """
     Draws a unit axis on the image with the specified rotation and translation
     :param img: The image to draw the axis on
-    :param rotV: The rotation vector for the axis (unit vector pointing in the same dir as axis)
-    :param t: The translation of the axis relative to the origin
-    :param K: The camera matrix
+    :param rvec: The rotation vector for the axis (unit vector pointing in the same dir as axis)
+    :param tvec: The translation of the axis relative to the origin
+    :param camera_matrix: The camera matrix
+    :param scale: The size of the axis
+    :param line_width: The width of the axis lines in pixels
     """
     # https://stackoverflow.com/questions/30207467/how-to-draw-3d-coordinate-axes-with-opencv-for-face-pose-estimation
-    points = np.float32([[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 0]]).reshape(-1, 3)
-    axisPoints, _ = cv.projectPoints(points, rotV, t, K, (0, 0, 0, 0))
+    points = np.float32([[scale, 0, 0], [0, scale, 0], [0, 0, scale], [0, 0, 0]]).reshape(-1, 3)
+    axisPoints, _ = cv.projectPoints(points, rvec, tvec, camera_matrix, (0, 0, 0, 0))
     axisPoints = axisPoints.astype(np.int32)
-    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255, 0, 0), 3)
-    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0, 255, 0), 3)
-    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (0, 0, 255), 3)
+    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255, 0, 0), line_width)
+    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0, 255, 0), line_width)
+    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (0, 0, 255), line_width)
 
 
 def draw_movement_widget(terror, img, arrow_scale=500, max_arrow_len=150, widget_center=(200, 200)):
