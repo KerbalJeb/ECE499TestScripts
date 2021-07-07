@@ -29,7 +29,7 @@ def main():
                              "calibration_data/distortion_coefficients.npy",
                              dim, alpha)
 
-    camera_mtx, dist_coefficients, new_camera_mtx, roi, mapx, mapy = cal_data
+    dist_coefficients, new_camera_mtx, roi, mapx, mapy = cal_data
 
     # Setup the GUI
     sg.theme('Black')
