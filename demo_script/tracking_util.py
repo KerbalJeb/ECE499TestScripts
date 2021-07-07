@@ -47,17 +47,16 @@ def world_pos_from_image(image, marker_layout, camera_mtx):
 
     # todo: look into the different methods that solvePnP provides
 
-    # convert image to greyscale and find the markers
-    greyscale_img = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
     bounding_boxes, ids = find_markers(image)
+    # Make the ids a row vector
     ids = ids.reshape(-1)
-    if len(bounding_boxes) > 0:
-        world_points = [marker_layout[marker_id] for marker_id in ids if marker_id in marker_layout]
-        if world_points:
-            world_points = np.array(world_points)
-            image_points = np.array(bounding_boxes).reshape(-1, 2)
-            _, r_vec, t_vec = cv.solvePnP(world_points, image_points, camera_mtx, (0, 0, 0, 0))
-            return True, r_vec, t_vec, ids.reshape(-1)
+    # Order the marker world positions in the same order as the bounding boxes returned by find_markers (ignoring any
+    # unknown ids)
+    world_points = [marker_layout[marker_id] for marker_id in ids if marker_id in marker_layout]
+    if world_points:
+        world_points = np.array(world_points)
+        image_points = np.array(bounding_boxes).reshape(-1, 2)
+        _, r_vec, t_vec = cv.solvePnP(world_points, image_points, camera_mtx, (0, 0, 0, 0))
+        return True, r_vec, t_vec, ids
 
     return False, None, None, None
-    pass
