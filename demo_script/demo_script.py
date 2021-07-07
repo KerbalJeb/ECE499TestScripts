@@ -12,6 +12,7 @@ def main():
     args = parser.parse_args()
 
     # todo add argument to load image and maybe video files (or it could be a GUI element)
+    # todo add batch process mode to load all images from one folder and write the processed images to an output folder
 
     # Load the camera cal data
     camera_mtx = np.load("calibration_data/camera_matrix.npy")
@@ -53,6 +54,8 @@ def main():
 
     # Event loop
     while True:
+        # todo call functions to find camera pos from markers
+        # todo update GUI as needed
         event, values = window.read(timeout=20)
         if event == sg.WINDOW_CLOSED:
             break
@@ -60,6 +63,8 @@ def main():
         if status:
             # Undistort the image and display it
             frame = cv.remap(frame, mapx, mapy, cv.INTER_LINEAR)
+            # todo crop image to only show roi
+            #  (https://stackoverflow.com/questions/39432322/what-does-the-getoptimalnewcameramatrix-do-in-opencv)
             imgbytes = cv.imencode('.png', frame)[1].tobytes()
             window['image'].update(data=imgbytes)
 
