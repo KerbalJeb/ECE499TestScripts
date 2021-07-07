@@ -8,6 +8,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from tracking_util import world_pos_from_image, load_cal_data
+from drawing_util import draw_axis
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -40,6 +41,10 @@ if __name__ == "__main__":
         [x["x"]            , x["y"] + x["size"], 0]
     ] for x in layout_json}
 
+    marker_pos = {int(x["id"]): {
+        "scale": x["size"],
+        "pos": np.array([x["x"], x["y"], 0]).reshape(3,1)
+    } for x in layout_json}
     for path in paths:
         file_name = os.path.basename(path)
         print(f"Loading {file_name}...")
@@ -69,6 +74,11 @@ if __name__ == "__main__":
               f"\tX:{euler[2]:+8.2f} deg")
 
         if args.show:
+            if args.draw_axis:
+                for marker_id in ids:
+                    marker_tvec = marker_pos[marker_id]["pos"]
+                    marker_scale = marker_pos[marker_id]["scale"]
+                    draw_axis(image, rvec, tvec+marker_tvec, new_camera_mtx, marker_scale, 2)
             cv.imshow(file_name, image)
             cv.waitKey(0)
             cv.destroyAllWindows()
