@@ -9,7 +9,7 @@ SHOW_IMGS = False
 CHECKERBOARD = (7, 9)
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-image_names = glob.glob('./img/*.jpg')
+image_names = glob.glob('img/*.jpg')
 
 objp = np.zeros((1, CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
 objp[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
@@ -43,6 +43,10 @@ if gray is not None:
     result, camera_matrix, distortion_coefficients, _, _ = \
         cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     h, w = gray.shape[:2]
+
+    np.save('camera_matrix.npy', camera_matrix)
+    np.save('distortion_coefficients.npy', distortion_coefficients)
+
     print("Camera Matrix:")
     pprint(camera_matrix)
     print("Distortion Coefficients:")
