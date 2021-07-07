@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation
 w = 1920
 h = 1080
 
-TARGET_POS = np.array([-0.4, -0.7, 2.5]).reshape(3, 1)
+TARGET_POS = np.array([0, 0, 0], np.float32).reshape(3, 1)
 MAX_TRANS_ERROR = 0.2
 MAX_ROT_ERROR = 0.1
 WIDGET_X = w - 200
@@ -14,6 +14,7 @@ WIDGET_Y = h - 200
 WIDGET_CENTER = (WIDGET_X, WIDGET_Y)
 ARROW_SCALE_FACTOR = 500
 MAX_ARROW_LEN = 150
+MARKER_DIM = 9.5
 
 DISTORTION_COEFFICIENTS = np.array([-0.33265127, 0.10013361, -0.00089593, 0.00123881, -0.00751234])
 CAMERA_MATRIX = np.array([
@@ -80,8 +81,10 @@ while cv2.waitKey(1) != ord('q'):
 
         print(
             f"Translation Error: "
-            f"[{10 * trans_error[0, 0]:+8.2f}, {10 * trans_error[1, 0]:+8.2f}, {10 * trans_error[2, 0]:+8.2f}]^T,"
-            f" Rotation Error: [{euler[0]:+8.2f}, {euler[1]:+8.2f}, {euler[2]:+8.2f}]", end='\r')
+            f"[{MARKER_DIM*trans_error[0, 0]:+8.2f}cm, {MARKER_DIM*trans_error[1, 0]:+8.2f}cm, "
+            f"{MARKER_DIM*trans_error[2, 0]:+8.2f}cm]^T,"
+            f" Rotation Error: [{euler[0]:+8.2f}, {euler[1]:+8.2f}, {euler[2]:+8.2f}]"
+            f", Total Distance: {MARKER_DIM*trans_error_mag}cm", end='\r')
 
         if trans_error_mag < MAX_TRANS_ERROR:
             pts = bounding_boxes.reshape((-1, 1, 2)).astype(np.int32)
