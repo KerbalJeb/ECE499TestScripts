@@ -4,6 +4,8 @@ import cv2 as cv
 import numpy as np
 import PySimpleGUI as sg
 
+from tracking_util import load_cal_data
+
 
 def main():
     # Parse Arguments
@@ -14,10 +16,6 @@ def main():
     # todo add argument to load image and maybe video files (or it could be a GUI element)
     # todo add batch process mode to load all images from one folder and write the processed images to an output folder
 
-    # Load the camera cal data
-    camera_mtx = np.load("calibration_data/camera_matrix.npy")
-    dist_coefficients = np.load("calibration_data/distortion_coefficients.npy")
-
     # Image size
     w = 1920
     h = 1080
@@ -27,9 +25,11 @@ def main():
     alpha = 1
 
     # Precompute mappings
-    # https://stackoverflow.com/questions/39432322/what-does-the-getoptimalnewcameramatrix-do-in-opencv
-    new_camera_mtx, roi = cv.getOptimalNewCameraMatrix(camera_mtx, dist_coefficients, (w, h), alpha)
-    mapx, mapy = cv.initUndistortRectifyMap(camera_mtx, dist_coefficients, None, new_camera_mtx, dim, 5)
+    cal_data = load_cal_data("calibration_data/camera_matrix.npy",
+                             "calibration_data/distortion_coefficients.npy",
+                             dim, alpha)
+
+    camera_mtx, dist_coefficients, new_camera_mtx, roi, mapx, mapy = cal_data
 
     # Setup the GUI
     sg.theme('Black')
