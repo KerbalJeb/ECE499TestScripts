@@ -1,5 +1,23 @@
 # ECE499TestScripts
 
+## Camera Calibration
+
+The camera calibration script can be found in demo_script/calibration_data/calibration_script.py. Take several images of
+a chess board pattern from different angles using the camera to be calibrated and store them as png or jpg files in a
+single folder. Then run the script to generate the camera matrix and distortion coefficient files.
+
+Chess board pattern can be found at: https://www.mrpt.org/downloads/camera-calibration-checker-board_9x7.pdf
+
+```text
+usage: calibration_script.py [-h] [--show] -s SRC [--dst DST]
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --show             displays the image before exiting
+  -s SRC, --src SRC  the folder to load images from
+  --dst DST          the folder to save the calibration data to
+```
+
 ## Command Line Usage
 
 The command line version of this script can be found at demo_script/cli_tracker.py. It takes one required command line
@@ -23,6 +41,7 @@ argument --src, which is a path to a source folder containing the following:
 ```
 
 Other command line arguments
+
 ```
 usage: cli_tracker.py [-h] -s SRC [--no-crop] [--show] [--kmatrix KMATRIX] [--dcoeff DCOEFF] [--file-name FILE_NAME] [--layout LAYOUT]
 

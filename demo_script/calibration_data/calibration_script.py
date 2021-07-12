@@ -6,9 +6,9 @@ import argparse
 import os.path
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--show", help="Displays the image before exiting", action="store_true")
-parser.add_argument("-s", "--src", help="The folder to load images from", required=True, type=str)
-parser.add_argument("--dst", help="The folder to load images from", default="./")
+parser.add_argument("--show", help="displays the image before exiting", action="store_true")
+parser.add_argument("-s", "--src", help="the folder to load images from", required=True, type=str)
+parser.add_argument("--dst", help="the folder to save the calibration data to", default="./")
 
 args = parser.parse_args()
 
