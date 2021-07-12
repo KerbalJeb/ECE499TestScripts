@@ -1,5 +1,4 @@
-# ECE499TestScripts
-
+# ECE499 Smart Marine Charger Sensor Project
 ## Camera Calibration
 
 The camera calibration script can be found in demo_script/calibration_data/calibration_script.py. Take several images of
