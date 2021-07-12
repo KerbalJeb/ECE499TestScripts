@@ -3,6 +3,7 @@ import argparse
 import cv2 as cv
 import numpy as np
 import PySimpleGUI as sg
+import os.path
 
 from tracking_util import load_cal_data
 
@@ -39,8 +40,12 @@ def main():
     # todo add text input for target position and required accuracy
 
     # define the window layout
-    layout = [[sg.Text('OpenCV Demo', size=(40, 1), justification='center', font='Helvetica 20')],
-              [sg.Image(filename='', key='image')]]
+    layout = [
+                [sg.FolderBrowse(key="-FILE-")],
+                [sg.Button('Submit')],
+                [sg.Text('OpenCV Demo', size=(40, 1), justification='center', font='Helvetica 20')],
+                [sg.Image(filename='', key='image')]
+            ]
 
     # create the window and show it without the plot
     window = sg.Window('Demo Application - OpenCV Integration',
@@ -57,8 +62,13 @@ def main():
         # todo call functions to find camera pos from markers
         # todo update GUI as needed
         event, values = window.read(timeout=20)
+
         if event == sg.WINDOW_CLOSED:
             break
+
+        if event == "Submit":
+            print(values["-FILE-"])
+
         status, frame = cam.read()
         if status:
             # Undistort the image and display it
