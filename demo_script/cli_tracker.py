@@ -73,7 +73,15 @@ if __name__ == "__main__":
             image = image[y:y + h, x:x + w]
 
         bw_img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-        success, rvec, tvec, ids = world_pos_from_image(image, marker_layout, new_camera_mtx)
+        success, rvec, tvec, ids = world_pos_from_image(bw_img, marker_layout, new_camera_mtx, image)
+
+        if not success:
+            print("failed to find markers")
+            if args.show:
+                cv.imshow(file_name, image)
+                cv.waitKey(0)
+                cv.destroyAllWindows()
+            continue
 
         rot = Rotation.from_rotvec(rvec.reshape(3, ))
         euler = rot.as_euler('zyx', degrees=True)
@@ -89,11 +97,11 @@ if __name__ == "__main__":
               f"\tX:{euler[2]:+8.2f} deg")
 
         if args.show:
-            if args.draw_axis:
-                for marker_id in ids:
-                    marker_tvec = marker_pos[marker_id]["pos"]
-                    marker_scale = marker_pos[marker_id]["scale"]
-                    draw_axis(image, rvec, tvec + marker_tvec, new_camera_mtx, marker_scale, 2)
+            for marker_id in ids:
+                marker_tvec = marker_pos[marker_id]["pos"]
+                marker_scale = marker_pos[marker_id]["scale"]
+                rot_m = rot.as_matrix()
+                draw_axis(image, rvec, tvec + rot_m @ marker_tvec, new_camera_mtx, marker_scale, 2)
             cv.imshow(file_name, image)
             cv.waitKey(0)
             cv.destroyAllWindows()

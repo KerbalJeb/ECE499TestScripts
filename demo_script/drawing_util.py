@@ -16,9 +16,12 @@ def draw_axis(img, rvec, tvec, camera_matrix, scale=1, line_width=3):
     points = np.float32([[scale, 0, 0], [0, scale, 0], [0, 0, scale], [0, 0, 0]]).reshape(-1, 3)
     axisPoints, _ = cv.projectPoints(points, rvec, tvec, camera_matrix, (0, 0, 0, 0))
     axisPoints = axisPoints.astype(np.int32)
-    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255, 0, 0), line_width)
+    # x-axis (red)
+    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (0, 0, 255), line_width)
+    # y-axis (green)
     cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0, 255, 0), line_width)
-    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (0, 0, 255), line_width)
+    # z-axis (blue)
+    cv.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (255, 0, 0), line_width)
 
 
 def draw_movement_widget(terror, img, arrow_scale=500, max_arrow_len=150, widget_center=(200, 200)):

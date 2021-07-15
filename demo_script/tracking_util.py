@@ -35,9 +35,10 @@ def find_markers(image):
     return boxes, ids
 
 
-def world_pos_from_image(image, marker_layout, camera_mtx):
+def world_pos_from_image(image, marker_layout, camera_mtx, draw_img=None):
     """
     Takes an image with and aruco marker and returns the world location and position of the camera
+    :param draw_img:
     :param image: The image to process
     :param marker_layout: The mapping between marker ids and the coordinates of their corners
     :param camera_mtx: The camera matrix
@@ -49,14 +50,19 @@ def world_pos_from_image(image, marker_layout, camera_mtx):
 
     bounding_boxes, ids = find_markers(image)
     # Make the ids a row vector
-    ids = ids.reshape(-1)
-    # Order the marker world positions in the same order as the bounding boxes returned by find_markers (ignoring any
-    # unknown ids)
-    world_points = [marker_layout[marker_id] for marker_id in ids if marker_id in marker_layout]
-    if world_points:
-        world_points = np.array(world_points)
-        image_points = np.array(bounding_boxes).reshape(-1, 2)
-        _, r_vec, t_vec = cv.solvePnP(world_points, image_points, camera_mtx, (0, 0, 0, 0))
-        return True, r_vec, t_vec, ids
+    if ids is not None:
+        found_ids = ids.reshape(-1)
+        ids = np.array([i for i in found_ids if i in marker_layout])
+        bounding_boxes = [bounding_boxes[np.where(found_ids == i)[0][0]] for i in ids]
+        if draw_img is not None:
+            aruco.drawDetectedMarkers(draw_img, bounding_boxes, ids)
+        # Order the marker world positions in the same order as the bounding boxes returned by find_markers (ignoring any
+        # unknown ids)
+        world_points = [marker_layout[marker_id] for marker_id in ids if marker_id in marker_layout]
+        if world_points:
+            world_points = np.array(world_points).reshape(-1, 3)
+            image_points = np.array(bounding_boxes).reshape(-1, 2)
+            _, r_vec, t_vec = cv.solvePnP(world_points, image_points, camera_mtx, (0, 0, 0, 0))
+            return True, r_vec, t_vec, ids
 
     return False, None, None, None
