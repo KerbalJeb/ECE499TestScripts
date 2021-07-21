@@ -65,10 +65,10 @@ def world_pos_from_image(image, marker_layout, camera_mtx, draw_img=None):
         world_points = [marker_layout[marker_id] for marker_id in ids if marker_id in marker_layout]
         if world_points:
             # Flatten the arrays of bounding boxes to just be lists of points in R^2 and R^3
-            world_points = np.array(world_points).reshape(-1, 3)
-            image_points = np.array(bounding_boxes).reshape(-1, 2)
+            world_points = np.array(world_points, dtype=np.float32).reshape(-1, 3)
+            image_points = np.array(bounding_boxes, dtype=np.float32).reshape(-1, 2)
             # Run opencv's pose estimation algorithm (iterative by default)
-            status, r_vec, t_vec = cv.solvePnP(world_points, image_points, camera_mtx, (0, 0, 0, 0))
+            status, r_vec, t_vec = cv.solvePnP(world_points, image_points, camera_mtx, (0, 0, 0, 0), cv.SOLVEPNP_IPPE)
             # Should not fail to compute transform
             assert status
             return True, r_vec, t_vec, ids

@@ -2,6 +2,7 @@ import argparse
 import glob
 import os.path
 import json
+import re
 
 import cv2 as cv
 import numpy as np
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         kmatrix_path = os.path.join(args.src, 'camera_matrix.npy')
 
     if args.dcoeff:
-        dcoeff_path = args.kmatrix
+        dcoeff_path = args.dcoeff
     else:
         dcoeff_path = os.path.join(args.src, 'distortion_coefficients.npy')
 
@@ -62,7 +63,8 @@ if __name__ == "__main__":
     } for x in layout_json}
 
     # Run on all images in the src directory
-    for path in paths:
+    all_tvecs = np.zeros((len(paths), 3, 1))
+    for i, path in enumerate(paths):
         file_name = os.path.basename(path)
         print(f"Loading {file_name}...")
 
@@ -98,6 +100,7 @@ if __name__ == "__main__":
         rot = Rotation.from_rotvec(rvec.reshape(3, ))
         # Grab standard euler angles
         euler = rot.as_euler('zyx', degrees=True)
+        all_tvecs[i,:] = tvec
 
         print(f"Translation\n"
               f"\t  {np.linalg.norm(tvec):+8.2f} cm\n"
@@ -118,3 +121,4 @@ if __name__ == "__main__":
             cv.imshow(file_name, image)
             cv.waitKey(0)
             cv.destroyAllWindows()
+    np.save('tvec.npy', all_tvecs)
