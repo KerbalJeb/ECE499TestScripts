@@ -1,5 +1,31 @@
 # ECE499 Smart Marine Charger Sensor Project
-## Camera Calibration
+
+This project consists of three main Python scripts: a camera calibration script, a command line tool and a GUI tool. The
+GUI tool will process live data from a web camera and the command line tool can be run on a folder of images for testing
+purposes.
+
+## Getting Started
+
+In order to use this project you will need to
+
+1. Install Python + dependencies
+1. Perform camera calibration
+1. Generate marker layout JSON files
+
+These steps are described in more detail below
+
+### Installation
+
+Install Python 3.8+ by following the direction on: https://www.python.org/. Also ensure that Python and pip have been
+installed correctly by typing `python --version` and `pip --version` into a terminal and ensuring that the commands run
+correctly. Note: depending on the system you may need to run `python3 --version` if `python --version` gives a 2.x
+version of Python.
+
+Next you will need to install the required python libraries, this can be done by
+running ` pip install -r requirements.txt ` from the top level directory. The libraries can also be installed in a
+virtual environment if you don't want to install them system wide: https://docs.python.org/3/library/venv.html
+
+### Camera Calibration
 
 The camera calibration script can be found in demo_script/calibration_data/calibration_script.py. Take several images of
 a chess board pattern from different angles using the camera to be calibrated and store them as png or jpg files in a
@@ -17,15 +43,10 @@ optional arguments:
   --dst DST          the folder to save the calibration data to
 ```
 
-## Command Line Usage
+### Marker Layout Files
 
-The command line version of this script can be found at demo_script/cli_tracker.py. It takes one required command line
-argument --src, which is a path to a source folder containing the following:
-
-- The images to process (jpg or png)
-- The camera matrix and distortion coefficients as npy files (named camera_matrix.npy and distortion_coefficients.npy)
-  respectively
-- The marker layout json file named marker_layout.json, format shown below
+The marker layout is described using a JSON file similar to the one shown below. It consists of a list of JSON objects
+that each have id, size, x and y properties. Note that every maker present must have a unique ID.
 
 ```JSmin
 [
@@ -35,9 +56,25 @@ argument --src, which is a path to a source folder containing the following:
     "size": 9.5, // length of marker edges (cm)
     "x": 0,  // x-offset of marker upper left corrner from origin 
     "y": 0   // y-offset of marker upper left corrner from origin 
+  },
+  {
+    "id": 1,
+    "size": 9.5, 
+    "x": 10, 
+    "y": 10  
   }
 ]
 ```
+
+## Command Line Usage
+
+The command line version of this script can be found at demo_script/cli_tracker.py. It takes one required command line
+argument --src, which is a path to a source folder containing the following:
+
+- The images to process (jpg or png)
+- The camera matrix and distortion coefficients npy files (named camera_matrix.npy and distortion_coefficients.npy)
+  respectively
+- The marker layout json file named marker_layout.json
 
 Other command line arguments
 
@@ -56,3 +93,7 @@ optional arguments:
   --layout LAYOUT       The marker layout json file
 
 ```
+
+## GUI Usage
+
+TODO: Fill out

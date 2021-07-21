@@ -48,6 +48,7 @@ if __name__ == "__main__":
     with open(layout_path) as f:
         layout_json = json.load(f)
 
+    # Process the data from the marker layout json file into the format that world_pos_from_image needs
     marker_layout = {int(x["id"]): [
         [x["x"], x["y"], 0],
         [x["x"] + x["size"], x["y"], 0],
@@ -59,22 +60,32 @@ if __name__ == "__main__":
         "scale": x["size"],
         "pos": np.array([x["x"], x["y"], 0]).reshape(3, 1)
     } for x in layout_json}
+
+    # Run on all images in the src directory
     for path in paths:
         file_name = os.path.basename(path)
         print(f"Loading {file_name}...")
 
         image = cv.imread(path, cv.IMREAD_COLOR)
         dim = image.shape[:-1][::-1]
+        # Inefficiently loading calibration data each time, but it doesn't matter in this case
+        # Done since image dimensions *might* be different so we should recalculate the camera matrix just in case
+        # and I don't want to write a separate function to do that since it would be of marginal value
         dist_coefficients, new_camera_mtx, roi, mapx, mapy = load_cal_data(kmatrix_path, dcoeff_path, dim)
 
+        # Undistorted the image
         image = cv.remap(image, mapx, mapy, cv.INTER_LINEAR)
         x, y, w, h = roi
+        # Crop image to the region of interest
         if not args.no_crop:
             image = image[y:y + h, x:x + w]
 
+        # Aruco detection runs on BW images
         bw_img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        # Grab the translation and rotation vectors plus the ids of the found makers for debugging
         success, rvec, tvec, ids = world_pos_from_image(bw_img, marker_layout, new_camera_mtx, image)
 
+        # Failed to find any markers
         if not success:
             print("failed to find markers")
             if args.show:
@@ -83,7 +94,9 @@ if __name__ == "__main__":
                 cv.destroyAllWindows()
             continue
 
+        # Use scipy's rotation class to simplify some things
         rot = Rotation.from_rotvec(rvec.reshape(3, ))
+        # Grab standard euler angles
         euler = rot.as_euler('zyx', degrees=True)
 
         print(f"Translation\n"

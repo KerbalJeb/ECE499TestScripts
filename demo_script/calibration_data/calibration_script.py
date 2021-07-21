@@ -50,7 +50,7 @@ if gray is not None:
     result, camera_matrix, distortion_coefficients, _, _ = \
         cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     h, w = gray.shape[:2]
-
+    # todo: combine into one file
     np.save(os.path.join(args.dst, 'camera_matrix.npy'), camera_matrix)
     np.save(os.path.join(args.dst, 'distortion_coefficients.npy'), distortion_coefficients)
 
