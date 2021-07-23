@@ -7,6 +7,7 @@ import re
 import cv2 as cv
 import numpy as np
 from scipy.spatial.transform import Rotation
+from scipy.io import savemat
 
 from tracking_util import world_pos_from_image, load_cal_data, load_layout
 from drawing_util import draw_axis
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("--show", help="Displays the image before exiting", action="store_true")
 
     parser.add_argument("--cal", type=str, help="The path to the npa camera calibration data")
-    parser.add_argument("--file-name", help="The name of the file in the folder to run on",)
+    parser.add_argument("--file-name", help="The name of the file in the folder to run on", )
     parser.add_argument("--layout", type=str, help='The marker layout json file')
 
     args = parser.parse_args()
@@ -44,7 +45,9 @@ if __name__ == "__main__":
 
     # Run on all images in the src directory
     all_tvecs = np.zeros((len(paths), 3, 1))
-    all_rvecs = np.zeros((len(paths), 3, 1))
+    all_tvecs2 = np.zeros((len(paths), 3, 1))
+    all_pvecs = np.zeros((len(paths), 3, 1))
+    all_rvecs = np.zeros((len(paths), 3, 3))
     for i, path in enumerate(paths):
         file_name = os.path.basename(path)
         print(f"Loading {file_name}...")
@@ -78,9 +81,10 @@ if __name__ == "__main__":
         # Grab standard euler angles
         euler = rot.as_euler('zyx', degrees=True)
         rot_m, _ = cv.Rodrigues(rvec)
-        tvec2 = np.linalg.inv(rot_m)@tvec
-        all_tvecs[i,:] = tvec2
-        all_rvecs[i,:] = rvec
+        tvec2 = rot_m.T @ tvec
+        all_tvecs[i, :] = tvec
+        all_rvecs[i, :] = rot_m
+        all_pvecs[i, :] = tvec2
         print(f"Translation\n"
               f"\t  {np.linalg.norm(tvec):+8.2f} cm\n"
               f"\tX:{tvec2[0, 0]:+8.2f} cm\n"
@@ -99,5 +103,4 @@ if __name__ == "__main__":
             cv.imshow(file_name, image)
             cv.waitKey(0)
             cv.destroyAllWindows()
-    np.save('tvec.npy', all_tvecs)
-    np.save('rvec.npy', all_rvecs)
+    savemat("results.mat", {"tvec": all_tvecs.T, "pvec": all_pvecs.T})
