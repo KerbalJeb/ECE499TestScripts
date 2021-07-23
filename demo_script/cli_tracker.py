@@ -8,18 +8,16 @@ import cv2 as cv
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tracking_util import world_pos_from_image, load_cal_data
+from tracking_util import world_pos_from_image, load_cal_data, load_layout
 from drawing_util import draw_axis
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--src", type=str, help='The source folder containing the images and calibration data to '
                                                       'use', required=True)
-    parser.add_argument("--no-crop", help="Prevents the image from being cropped after distorting", action="store_true")
     parser.add_argument("--show", help="Displays the image before exiting", action="store_true")
 
-    parser.add_argument("--kmatrix", type=str, help="The path to the npy camera matrix")
-    parser.add_argument("--dcoeff", type=str, help="The path the the npy distortion coefficient vector")
+    parser.add_argument("--cal", type=str, help="The path to the npa camera calibration data")
     parser.add_argument("--file-name", help="The name of the file in the folder to run on",)
     parser.add_argument("--layout", type=str, help='The marker layout json file')
 
@@ -36,34 +34,17 @@ if __name__ == "__main__":
     else:
         layout_path = os.path.join(args.src, 'marker_layout.json')
 
-    if args.kmatrix:
-        kmatrix_path = args.kmatrix
+    if args.cal:
+        cal_path = args.cal
     else:
-        kmatrix_path = os.path.join(args.src, 'camera_matrix.npy')
-
-    if args.dcoeff:
-        dcoeff_path = args.dcoeff
-    else:
-        dcoeff_path = os.path.join(args.src, 'distortion_coefficients.npy')
-
-    with open(layout_path) as f:
-        layout_json = json.load(f)
+        cal_path = os.path.join(args.src, 'camera_cal.npz')
 
     # Process the data from the marker layout json file into the format that world_pos_from_image needs
-    marker_layout = {int(x["id"]): [
-        [x["x"], x["y"], 0],
-        [x["x"] + x["size"], x["y"], 0],
-        [x["x"] + x["size"], x["y"] + x["size"], 0],
-        [x["x"], x["y"] + x["size"], 0]
-    ] for x in layout_json}
-
-    marker_pos = {int(x["id"]): {
-        "scale": x["size"],
-        "pos": np.array([x["x"], x["y"], 0]).reshape(3, 1)
-    } for x in layout_json}
+    marker_layout, marker_pos = load_layout(layout_path)
 
     # Run on all images in the src directory
     all_tvecs = np.zeros((len(paths), 3, 1))
+    all_rvecs = np.zeros((len(paths), 3, 1))
     for i, path in enumerate(paths):
         file_name = os.path.basename(path)
         print(f"Loading {file_name}...")
@@ -73,14 +54,10 @@ if __name__ == "__main__":
         # Inefficiently loading calibration data each time, but it doesn't matter in this case
         # Done since image dimensions *might* be different so we should recalculate the camera matrix just in case
         # and I don't want to write a separate function to do that since it would be of marginal value
-        dist_coefficients, new_camera_mtx, roi, mapx, mapy = load_cal_data(kmatrix_path, dcoeff_path, dim)
+        dist_coefficients, new_camera_mtx, roi, mapx, mapy = load_cal_data(cal_path, dim)
 
         # Undistorted the image
         image = cv.remap(image, mapx, mapy, cv.INTER_LINEAR)
-        x, y, w, h = roi
-        # Crop image to the region of interest
-        if not args.no_crop:
-            image = image[y:y + h, x:x + w]
 
         # Aruco detection runs on BW images
         bw_img = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -100,13 +77,15 @@ if __name__ == "__main__":
         rot = Rotation.from_rotvec(rvec.reshape(3, ))
         # Grab standard euler angles
         euler = rot.as_euler('zyx', degrees=True)
-        all_tvecs[i,:] = tvec
-
+        rot_m, _ = cv.Rodrigues(rvec)
+        tvec2 = np.linalg.inv(rot_m)@tvec
+        all_tvecs[i,:] = tvec2
+        all_rvecs[i,:] = rvec
         print(f"Translation\n"
               f"\t  {np.linalg.norm(tvec):+8.2f} cm\n"
-              f"\tX:{tvec[0, 0]:+8.2f} cm\n"
-              f"\tY:{tvec[1, 0]:+8.2f} cm\n"
-              f"\tZ:{tvec[2, 0]:+8.2f} cm\n"
+              f"\tX:{tvec2[0, 0]:+8.2f} cm\n"
+              f"\tY:{tvec2[1, 0]:+8.2f} cm\n"
+              f"\tZ:{tvec2[2, 0]:+8.2f} cm\n"
               f"Rotation\n"
               f"\tZ:{euler[0]:+8.2f} deg\n"
               f"\tY:{euler[1]:+8.2f} deg\n"
@@ -116,9 +95,9 @@ if __name__ == "__main__":
             for marker_id in ids:
                 marker_tvec = marker_pos[marker_id]["pos"]
                 marker_scale = marker_pos[marker_id]["scale"]
-                rot_m = rot.as_matrix()
                 draw_axis(image, rvec, tvec + rot_m @ marker_tvec, new_camera_mtx, marker_scale, 2)
             cv.imshow(file_name, image)
             cv.waitKey(0)
             cv.destroyAllWindows()
     np.save('tvec.npy', all_tvecs)
+    np.save('rvec.npy', all_rvecs)

@@ -47,12 +47,19 @@ for fname in image_names:
 
 if gray is not None:
     # Calculate Parameters
-    result, camera_matrix, distortion_coefficients, _, _ = \
+    result, camera_matrix, distortion_coefficients, rvecs, tvecs = \
         cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
     h, w = gray.shape[:2]
+
+    mean_error = 0
+    for i in range(len(objpoints)):
+        imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], camera_matrix, distortion_coefficients)
+        error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+        mean_error += error
+    print(f"total error: {mean_error / len(objpoints)}")
+
     # todo: combine into one file
-    np.save(os.path.join(args.dst, 'camera_matrix.npy'), camera_matrix)
-    np.save(os.path.join(args.dst, 'distortion_coefficients.npy'), distortion_coefficients)
+    np.savez(os.path.join(args.dst, 'camera_cal.npz'), k=camera_matrix, d=distortion_coefficients)
 
     print("Camera Matrix:")
     pprint(camera_matrix)
