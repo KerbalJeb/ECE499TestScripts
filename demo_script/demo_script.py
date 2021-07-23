@@ -10,7 +10,6 @@ from scipy.spatial.transform import Rotation
 
 from drawing_util import draw_axis
 from tracking_util import load_cal_data, world_pos_from_image, load_layout
-from gui_helper import event_function
 
 EventFunctions = {}
 
@@ -25,19 +24,12 @@ def main():
     parser.add_argument("-c", "--camera", type=int, default=0, help="The id of the camera to use")
     args = parser.parse_args()
 
-    # todo add argument to load image and maybe video files (or it could be a GUI element)
-    # todo add batch process mode to load all images from one folder and write the processed images to an output folder
-
-    # Image size
-
     loaded_cal = False
     loaded_layout = False
 
     # Setup the GUI
     sg.theme('Black')
 
-    # todo add GUI elements to show position and rotation
-    # todo add some check boxes to enable/disable some overlays
     # todo add text input for target position and required accuracy
 
     # define the window layout
