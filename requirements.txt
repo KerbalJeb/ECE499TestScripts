@@ -2,3 +2,4 @@ numpy>=1.20.3
 opencv-contrib-python>=4.5.2.54
 scipy>=1.7.0
 PySimpleGUI>=4.45.0
+pytest>=6.2.4
