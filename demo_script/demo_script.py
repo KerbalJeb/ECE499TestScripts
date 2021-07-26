@@ -61,7 +61,8 @@ def main():
         ],
         [sg.Column([[sg.Frame('Control Panel', layout=control_panel, vertical_alignment='top')],
                     [sg.Frame('Target', layout=target_input)],
-                    [sg.Image(filename='', key='widget')]],
+                    [sg.Image(filename='', key='widget')],
+                    [sg.Text('Not Aligned', key='status')]],
                    vertical_alignment='top'),
          sg.Image(filename='', key='image'),
          sg.Column([
@@ -70,12 +71,6 @@ def main():
                  [sg.Text('X: N/A', key='x-pos', size=(15, 1))],
                  [sg.Text('Y: N/A', key='y-pos', size=(15, 1))],
                  [sg.Text('Z: N/A', key='z-pos', size=(15, 1))],
-             ])],
-             [sg.Frame('World-Space Position', vertical_alignment='top', layout=[
-                 [sg.Text('N/A', key='pos-world', size=(15, 1))],
-                 [sg.Text('X: N/A', key='x-pos-world', size=(15, 1))],
-                 [sg.Text('Y: N/A', key='y-pos-world', size=(15, 1))],
-                 [sg.Text('Z: N/A', key='z-pos-world', size=(15, 1))],
              ])],
              [sg.Frame('Rotation', vertical_alignment='top', layout=[
                  [sg.Text('X: N/A', key='x-rot', size=(15, 1))],
@@ -122,21 +117,24 @@ def main():
 
         if event == 'x-target':
             text = values[event]
-            if not re.match(r"^(?:\d+(?:\.\d*)?|\.\d+)$", text):
-                window[event].update(text[:-1])
-            target_pos[0, 0] = float(text)
+            try:
+                target_pos[0, 0] = float(text)
+            except ValueError:
+                pass
 
         if event == 'y-target':
             text = values[event]
-            if not re.match(r"^(?:\d+(?:\.\d*)?|\.\d+)$", text):
-                window[event].update(text[:-1])
-            target_pos[1, 0] = float(text)
+            try:
+                target_pos[1, 0] = float(text)
+            except ValueError:
+                pass
 
         if event == 'z-target':
             text = values[event]
-            if not re.match(r"^(?:\d+(?:\.\d*)?|\.\d+)$", text):
-                window[event].update(text[:-1])
-            target_pos[2, 0] = float(text)
+            try:
+                target_pos[2, 0] = float(text)
+            except ValueError:
+                pass
 
         if event == 'cal-path':
             cal_path = values[event]
@@ -153,6 +151,11 @@ def main():
 
         if event in ('Exit', None):
             break
+
+        xyPosLocked = False
+        zPosLocked = False
+        xyRotLocked = False
+        zRotLocked = False
 
         status, frame = cam.read()
         if status:
@@ -172,17 +175,15 @@ def main():
 
                     if ret:
                         Rt, _ = cv.Rodrigues(rvec)
-                        R = Rt.transpose()
-                        pos = -R @ tvec
+                        # Use scipy's rotation class to simplify some things
+                        rot = Rotation.from_matrix(Rt)
+                        # Grab standard euler angles
+                        euler = rot.as_euler('zyx', degrees=True)
+
                         window['pos'].update(f"{np.linalg.norm(tvec):+8.2f}cm")
                         window['x-pos'].update(f"X: {tvec[0, 0]:+8.2f}cm")
                         window['y-pos'].update(f"Y: {tvec[1, 0]:+8.2f}cm")
                         window['z-pos'].update(f"Z: {tvec[2, 0]:+8.2f}cm")
-
-                        window['pos-world'].update(f"{np.linalg.norm(pos):+8.2f}cm")
-                        window['x-pos-world'].update(f"X: {pos[0, 0]:+8.2f}cm")
-                        window['y-pos-world'].update(f"Y: {pos[1, 0]:+8.2f}cm")
-                        window['z-pos-world'].update(f"Z: {pos[2, 0]:+8.2f}cm")
 
                         terror = target_pos - tvec
                         xPos = int(np.clip(terror[0, 0], -100, 100))
@@ -192,19 +193,41 @@ def main():
                         zPos = int(np.clip(terror[2, 0], -100, 100))
                         zPos += 125
 
-                        cv.circle(widget_img, (xPos, yPos), 15, color=(0, 0, 255), thickness=2)
+                        xyPosLocked = np.linalg.norm(terror[0:2]) < 0.5
+                        xyRotLocked = np.linalg.norm(euler[1:-1]) < 5
+                        zPosLocked = abs(terror[2]) < 0.5
+                        zRotLocked = abs(euler[0]) < 5
+
+                        if all([xyRotLocked, xyPosLocked, zRotLocked, zPosLocked]):
+                            window['status'].update('Aligned')
+                        else:
+                            window['status'].update('Not Aligned')
+
+                        cv.circle(widget_img, (xPos, yPos), 15, color=(0, 0, 255) if not xyPosLocked else (0, 255, 0),
+                                  thickness=2)
+                        cv.line(widget_img, (5, zPos), (20, zPos), color=(255, 0, 0) if not zPosLocked else (0, 255, 0),
+                                thickness=2)
+
+                        xRot = int(euler[2] / 1.8 + 125)
+                        yRot = int(euler[1] / 1.8 + 125)
+                        zRot = np.deg2rad(np.clip(euler[0] - 90, -135, -45))
+
+                        r = 100
+
+                        p0 = (int((r - 5) * np.cos(zRot)) + 125, int((r - 5) * np.sin(zRot)) + 125)
+                        p1 = (int((r + 5) * np.cos(zRot)) + 125, int((r + 5) * np.sin(zRot)) + 125)
+
+                        cv.circle(widget_img, (yRot, xRot), 3, color=(255, 0, 255) if not xyRotLocked else (0, 255, 0),
+                                  thickness=-1)
+                        cv.line(widget_img, p0, p1, color=(255, 0, 255) if not zRotLocked else (0, 255, 0), thickness=2)
+
+                        cv.ellipse(widget_img, (125, 125), (r, r), 0, -45, -135, color=(0, 0, 0), thickness=1)
                         cv.line(widget_img, (125, 0), (125, 250), color=(0, 0, 0), thickness=1)
                         cv.line(widget_img, (0, 125), (250, 125), color=(0, 0, 0), thickness=1)
-                        cv.line(widget_img, (5, zPos), (20, zPos), color=(255, 0, 0), thickness=2)
 
-                        # Use scipy's rotation class to simplify some things
-                        rot = Rotation.from_matrix(Rt)
-                        # Grab standard euler angles
-                        euler = rot.as_euler('xyz', degrees=True)
-
-                        window['x-rot'].update(f"X: {euler[0]:+8.2f}deg")
+                        window['x-rot'].update(f"X: {euler[2]:+8.2f}deg")
                         window['y-rot'].update(f"Y: {euler[1]:+8.2f}deg")
-                        window['z-rot'].update(f"Z: {euler[2]:+8.2f}deg")
+                        window['z-rot'].update(f"Z: {euler[0]:+8.2f}deg")
                         if values['draw-axis']:
                             for marker_id in ids:
                                 marker_tvec = marker_pos[marker_id]["pos"]
