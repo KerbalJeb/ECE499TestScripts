@@ -22,7 +22,7 @@ dim = (W, H)
 def main():
     # Parse Arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--camera", type=int, default=0, help="The id of the camera to use")
+    parser.add_argument("-c", "--camera", default=0, help="The id of the camera to use")
     parser.add_argument("--cal", type=str, help="The path to the npa camera calibration data")
     parser.add_argument("--layout", type=str, help='The marker layout json file')
 
@@ -194,7 +194,7 @@ def main():
                         zPos += 125
 
                         xyPosLocked = np.linalg.norm(terror[0:2]) < 0.5
-                        xyRotLocked = np.linalg.norm(euler[1:-1]) < 5
+                        xyRotLocked = np.linalg.norm(euler[1:]) < 5
                         zPosLocked = abs(terror[2]) < 0.5
                         zRotLocked = abs(euler[0]) < 5
 
@@ -208,8 +208,8 @@ def main():
                         cv.line(widget_img, (5, zPos), (20, zPos), color=(255, 0, 0) if not zPosLocked else (0, 255, 0),
                                 thickness=2)
 
-                        xRot = int(euler[2] / 1.8 + 125)
-                        yRot = int(euler[1] / 1.8 + 125)
+                        xRot = np.clip(int(euler[2]*2 + 125), -100, 100)
+                        yRot = np.clip(int(euler[1]*2 + 125), -100, 100)
                         zRot = np.deg2rad(np.clip(euler[0] - 90, -135, -45))
 
                         r = 100
