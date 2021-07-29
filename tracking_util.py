@@ -78,8 +78,6 @@ def world_pos_from_image(image, marker_layout, camera_mtx, draw_img=None):
     the rotation vector, translation vector and ids if it was successful
     """
 
-    # todo: look into the different methods that solvePnP provides
-
     bounding_boxes, ids = find_markers(image)
     # Make the ids a row vector
     if ids is not None:

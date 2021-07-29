@@ -27,7 +27,7 @@ virtual environment if you don't want to install them system wide: https://docs.
 
 ### Camera Calibration
 
-The camera calibration script can be found in demo_script/calibration_data/calibration_script.py. Take several images of
+The camera calibration script can be found in calibration_data/calibration_script.py. Take several images of
 a chess board pattern from different angles using the camera to be calibrated and store them as png or jpg files in a
 single folder. Then run the script to generate the camera matrix and distortion coefficient files.
 
@@ -68,7 +68,7 @@ that each have id, size, x and y properties. Note that every maker present must 
 
 ## Command Line Usage
 
-The command line version of this script can be found at demo_script/cli_tracker.py. It takes one required command line
+The command line version of this script can be found at cli_tracker.py. It takes one required command line
 argument --src, which is a path to a source folder containing the following:
 
 - The images to process (jpg or png)

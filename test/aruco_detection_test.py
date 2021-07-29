@@ -64,4 +64,5 @@ def test_for_any_valid_ids(valid_ids, path):
         if not os.path.isdir(os.path.join(dir_name, results_path)):
             os.mkdir(results_path)
         cv.imwrite(os.path.join(results_path, file_name), color_img)
+        
     assert found_ids != list()

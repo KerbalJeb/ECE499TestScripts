@@ -83,6 +83,7 @@ if __name__ == "__main__":
         rot_m, _ = cv.Rodrigues(rvec)
         tvec2 = rot_m.T @ tvec
         all_tvecs[i, :] = tvec
+        all_tvecs2[i, :] = rot_m.T @ np.array([0,0,1]).reshape(3,1)
         all_rvecs[i, :] = rot_m
         all_pvecs[i, :] = tvec2
         print(f"Translation\n"
@@ -103,4 +104,4 @@ if __name__ == "__main__":
             cv.imshow(file_name, image)
             cv.waitKey(0)
             cv.destroyAllWindows()
-    savemat("results.mat", {"tvec": all_tvecs.T, "pvec": all_pvecs.T})
+    savemat("results.mat", {"tvec": all_tvecs.T.reshape(3, -1), "pvec": all_pvecs.T.reshape(3, -1), "d":all_tvecs2})

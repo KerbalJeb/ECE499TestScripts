@@ -15,8 +15,10 @@ def pytest_generate_tests(metafunc):
     source = metafunc.config.option.src
     ids = metafunc.config.option.ids
     option_value = metafunc.config.option.src
+    img_paths = glob.glob(os.path.join(source, "*.jpg"))
+    img_paths += glob.glob(os.path.join(source, "*.png"))
     if 'path' in metafunc.fixturenames and option_value is not None:
-        metafunc.parametrize("path", glob.glob(os.path.join(source, "*.jpg")))
+        metafunc.parametrize("path", img_paths)
     if 'valid_id' in metafunc.fixturenames and option_value is not None:
         metafunc.parametrize("valid_id", ids)
     if 'valid_ids' in metafunc.fixturenames and option_value is not None:
