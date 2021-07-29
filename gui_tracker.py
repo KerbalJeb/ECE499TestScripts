@@ -23,7 +23,7 @@ def main():
     # Parse Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--camera", default=0, help="The id of the camera to use")
-    parser.add_argument("--cal", type=str, help="The path to the npa camera calibration data")
+    parser.add_argument("--cal", type=str, help="The path to the npz camera calibration data")
     parser.add_argument("--layout", type=str, help='The marker layout json file')
 
     args = parser.parse_args()

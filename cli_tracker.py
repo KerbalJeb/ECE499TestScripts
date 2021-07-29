@@ -18,7 +18,7 @@ if __name__ == "__main__":
                                                       'use', required=True)
     parser.add_argument("--show", help="Displays the image before exiting", action="store_true")
 
-    parser.add_argument("--cal", type=str, help="The path to the npa camera calibration data")
+    parser.add_argument("--cal", type=str, help="The path to the npz camera calibration data")
     parser.add_argument("--file-name", help="The name of the file in the folder to run on", )
     parser.add_argument("--layout", type=str, help='The marker layout json file')
 
